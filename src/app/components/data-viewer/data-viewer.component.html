@@ -20,7 +20,7 @@
       <mat-form-field appearance="outline" class="search-field">
         <mat-label>Search</mat-label>
         <input matInput [(ngModel)]="searchTerm" (keyup.enter)="onSearch()" placeholder="Search across all fields...">
-        <button mat-icon-button matSuffix (click)="onSearch()" *ngIf="searchTerm">
+        <button mat-icon-button matSuffix (click)="onSearch()">
           <mat-icon>search</mat-icon>
         </button>
         <button mat-icon-button matSuffix (click)="clearSearch()" *ngIf="searchTerm">
@@ -43,21 +43,44 @@
         *ngIf="selectedCollection"
         class="ag-theme-material"
         [columnDefs]="columnDefs"
+        [rowData]="rowData"
         [defaultColDef]="defaultColDef"
-        [rowModelType]="rowModelType"
-        [cacheBlockSize]="cacheBlockSize"
-        [maxBlocksInCache]="maxBlocksInCache"
-        [pagination]="true"
-        [paginationPageSize]="100"
         [animateRows]="true"
         [enableCellTextSelection]="true"
         [suppressRowClickSelection]="true"
+        [domLayout]="'normal'"
         (gridReady)="onGridReady($event)"
+        (sortChanged)="onSortChanged()"
+        (filterChanged)="onFilterChanged()"
       ></ag-grid-angular>
   
       <div *ngIf="!selectedCollection && !loading" class="no-data">
         <mat-icon>inbox</mat-icon>
         <p>Select a collection to view data</p>
+      </div>
+    </div>
+  
+    <!-- Custom Pagination -->
+    <div class="pagination" *ngIf="selectedCollection && totalCount > 0">
+      <div class="pagination-info">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} records
+      </div>
+      <div class="pagination-controls">
+        <button mat-icon-button (click)="previousPage()" [disabled]="currentPage === 1">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        
+        <button 
+          *ngFor="let page of pageNumbers" 
+          mat-button 
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        
+        <button mat-icon-button (click)="nextPage()" [disabled]="currentPage === totalPages">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
       </div>
     </div>
   </div>

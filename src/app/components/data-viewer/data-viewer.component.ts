@@ -1,22 +1,24 @@
-import { Component } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { GridApi, ColDef, GridReadyEvent, IServerSideDatasource, IServerSideGetRowsParams } from 'ag-grid-community';
+import { Component, OnInit } from '@angular/core';
+import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { DataService, QueryRequest } from '../../services/data.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { SharedModule } from '../../shared/shared.module';
 
 @Component({
   selector: 'app-data-viewer',
-  imports: [SharedModule],
   templateUrl: './data-viewer.component.html',
-  styleUrl: './data-viewer.component.scss'
+  styleUrls: ['./data-viewer.component.scss'],
+  imports : [SharedModule]
 })
-export class DataViewerComponent {
+export class DataViewerComponent implements OnInit {
   collections: string[] = [];
   selectedCollection: string = '';
   searchTerm: string = '';
   
   gridApi!: GridApi;
   columnDefs: ColDef[] = [];
+  rowData: any[] = [];
+  
   defaultColDef: ColDef = {
     sortable: true,
     filter: true,
@@ -25,11 +27,16 @@ export class DataViewerComponent {
     minWidth: 100
   };
   
-  rowModelType: 'serverSide' = 'serverSide';
-  cacheBlockSize = 100;
-  maxBlocksInCache = 10;
+  // Pagination settings
+  currentPage = 1;
+  pageSize = 100;
+  totalCount = 0;
+  totalPages = 0;
   
   loading = false;
+  
+  // Expose Math to template
+  Math = Math;
 
   constructor(
     private dataService: DataService,
@@ -62,6 +69,7 @@ export class DataViewerComponent {
   onCollectionChange(): void {
     if (this.selectedCollection) {
       this.searchTerm = '';
+      this.currentPage = 1;
       this.loadCollection();
     }
   }
@@ -71,19 +79,23 @@ export class DataViewerComponent {
 
     this.loading = true;
     
-    // First, fetch a sample to get field definitions
-    const sampleRequest: QueryRequest = {
-      page: 1,
-      pageSize: 1,
-      searchTerm: ''
+    const queryRequest: QueryRequest = {
+      page: this.currentPage,
+      pageSize: this.pageSize,
+      searchTerm: this.searchTerm
     };
 
-    this.dataService.queryCollection(this.selectedCollection, sampleRequest).subscribe({
+    this.dataService.queryCollection(this.selectedCollection, queryRequest).subscribe({
       next: (response) => {
-        this.createColumnDefs(response.fields);
-        if (this.gridApi) {
-          this.setupServerSideDatasource();
+        this.rowData = response.data;
+        this.totalCount = response.totalCount;
+        this.totalPages = response.totalPages;
+        
+        // Create column definitions from fields
+        if (response.fields && response.fields.length > 0) {
+          this.createColumnDefs(response.fields);
         }
+        
         this.loading = false;
       },
       error: (error) => {
@@ -153,73 +165,107 @@ export class DataViewerComponent {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    this.setupServerSideDatasource();
-  }
-
-  setupServerSideDatasource(): void {
-    const datasource: IServerSideDatasource = {
-      getRows: (params: IServerSideGetRowsParams) => {
-        const page = Math.floor(params.request.startRow! / this.cacheBlockSize) + 1;
-        
-        // Build filters
-        const filters: { [key: string]: any } = {};
-        if (params.request.filterModel) {
-          Object.keys(params.request.filterModel).forEach(key => {
-            const filterModel = (params.request.filterModel as { [key: string]: any })[key];
-            if (filterModel.filter !== undefined && filterModel.filter !== null && filterModel.filter !== '') {
-              filters[key] = {
-                type: filterModel.type || 'contains',
-                value: filterModel.filter
-              };
-            }
-          });
-        }
-
-        // Build sort
-        let sortField: string | undefined;
-        let sortOrder: 'asc' | 'desc' = 'asc';
-        if (params.request.sortModel && params.request.sortModel.length > 0) {
-          sortField = params.request.sortModel[0].colId;
-          sortOrder = params.request.sortModel[0].sort as 'asc' | 'desc';
-        }
-
-        const queryRequest: QueryRequest = {
-          page,
-          pageSize: this.cacheBlockSize,
-          sortField,
-          sortOrder,
-          filters,
-          searchTerm: this.searchTerm
-        };
-
-        this.dataService.queryCollection(this.selectedCollection, queryRequest).subscribe({
-          next: (response) => {
-            params.success({
-              rowData: response.data,
-              rowCount: response.totalCount
-            });
-          },
-          error: (error) => {
-            console.error('Error fetching data:', error);
-            params.fail();
-            this.snackBar.open('Failed to fetch data', 'Close', { duration: 3000 });
-          }
-        });
-      }
-    };
-
-    this.gridApi.setGridOption('serverSideDatasource', datasource);
+    this.gridApi.sizeColumnsToFit();
   }
 
   onSearch(): void {
-    if (this.gridApi) {
-      this.setupServerSideDatasource();
-    }
+    this.currentPage = 1;
+    this.loadCollection();
   }
 
   clearSearch(): void {
     this.searchTerm = '';
     this.onSearch();
+  }
+
+  onSortChanged(): void {
+    if (!this.gridApi) return;
+    
+    const sortModel = this.gridApi.getColumnState()
+      .filter(col => col.sort != null)
+      .map(col => ({ colId: col.colId, sort: col.sort }));
+    
+    if (sortModel.length > 0) {
+      const queryRequest: QueryRequest = {
+        page: this.currentPage,
+        pageSize: this.pageSize,
+        sortField: sortModel[0].colId,
+        sortOrder: sortModel[0].sort as 'asc' | 'desc',
+        searchTerm: this.searchTerm
+      };
+      
+      this.loading = true;
+      this.dataService.queryCollection(this.selectedCollection, queryRequest).subscribe({
+        next: (response) => {
+          this.rowData = response.data;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error sorting data:', error);
+          this.loading = false;
+        }
+      });
+    }
+  }
+
+  onFilterChanged(): void {
+    if (!this.gridApi) return;
+    
+    const filterModel = this.gridApi.getFilterModel();
+    const filters: { [key: string]: any } = {};
+    
+    Object.keys(filterModel).forEach(key => {
+      const filter = filterModel[key];
+      if (filter.filter) {
+        filters[key] = {
+          type: filter.type || 'contains',
+          value: filter.filter
+        };
+      }
+    });
+    
+    const queryRequest: QueryRequest = {
+      page: 1,
+      pageSize: this.pageSize,
+      filters,
+      searchTerm: this.searchTerm
+    };
+    
+    this.loading = true;
+    this.dataService.queryCollection(this.selectedCollection, queryRequest).subscribe({
+      next: (response) => {
+        this.rowData = response.data;
+        this.totalCount = response.totalCount;
+        this.totalPages = response.totalPages;
+        this.currentPage = 1;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error filtering data:', error);
+        this.loading = false;
+      }
+    });
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadCollection();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadCollection();
+    }
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.loadCollection();
+    }
   }
 
   exportToCsv(): void {
@@ -228,5 +274,22 @@ export class DataViewerComponent {
         fileName: `${this.selectedCollection}_export.csv`
       });
     }
+  }
+
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxPages = 5;
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxPages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxPages - 1);
+    
+    if (endPage - startPage < maxPages - 1) {
+      startPage = Math.max(1, endPage - maxPages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
   }
 }
