@@ -1,0 +1,144 @@
+.integrations-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f5f5f5;
+  }
+  
+  .content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  
+  .integration-card {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .integration-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .github-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #333;
+  }
+  
+  .title-section {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .status-section {
+    display: flex;
+    align-items: center;
+  }
+  
+  .status-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    
+    &.connected {
+      color: #4caf50;
+    }
+    
+    &.disconnected {
+      color: #f44336;
+    }
+  }
+  
+  .not-connected {
+    text-align: center;
+    padding: 24px 0;
+    
+    p {
+      margin-bottom: 24px;
+      color: #666;
+    }
+    
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+  
+  .connected {
+    padding: 16px 0;
+  }
+  
+  .connection-info {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+  }
+  
+  .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #4caf50;
+  }
+  
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    p {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .username {
+      font-size: 18px;
+    }
+    
+    .email {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .connected-date,
+    .last-sync {
+      font-size: 13px;
+      color: #888;
+    }
+  }
+  
+  .small-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+  
+  .options-content {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    flex-wrap: wrap;
+    
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }

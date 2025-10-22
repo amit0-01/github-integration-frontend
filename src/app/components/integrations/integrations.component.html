@@ -1,0 +1,90 @@
+<div class="integrations-container">
+    <mat-toolbar color="primary">
+      <span>GitHub Integrations</span>
+    </mat-toolbar>
+  
+    <div class="content">
+      <mat-card class="integration-card">
+        <mat-card-header>
+          <div class="header-content">
+            <div class="integration-info">
+              <mat-icon class="github-icon">code</mat-icon>
+              <div class="title-section">
+                <mat-card-title>GitHub Integration</mat-card-title>
+                <mat-card-subtitle>Connect your GitHub account to sync data</mat-card-subtitle>
+              </div>
+            </div>
+            
+            <div class="status-section">
+              <mat-spinner *ngIf="loading" diameter="30"></mat-spinner>
+              <mat-icon *ngIf="!loading && integrationStatus?.connected" class="status-icon connected">
+                check_circle
+              </mat-icon>
+              <mat-icon *ngIf="!loading && !integrationStatus?.connected" class="status-icon disconnected">
+                cancel
+              </mat-icon>
+            </div>
+          </div>
+        </mat-card-header>
+  
+        <mat-card-content>
+          <!-- Not Connected State -->
+          <div *ngIf="!integrationStatus?.connected" class="not-connected">
+            <p>Connect your GitHub account to start syncing organizations, repositories, commits, pull requests, and issues.</p>
+            <button mat-raised-button color="primary" (click)="connectGithub()" [disabled]="loading">
+              <mat-icon>link</mat-icon>
+              Connect GitHub
+            </button>
+          </div>
+  
+          <!-- Connected State -->
+          <div *ngIf="integrationStatus?.connected" class="connected">
+            <div class="connection-info">
+              <img *ngIf="integrationStatus?.avatarUrl" [src]="integrationStatus?.avatarUrl" class="avatar" />
+              <div class="user-details">
+                <p class="username">
+                  <strong>{{ integrationStatus?.name || integrationStatus?.username }}</strong>
+                </p>
+                <p class="email" *ngIf="integrationStatus?.email">{{ integrationStatus?.email }}</p>
+                <p class="connected-date">
+                  <mat-icon class="small-icon">event</mat-icon>
+                  Connected on {{ getConnectedDate() }}
+                </p>
+                <p class="last-sync">
+                  <mat-icon class="small-icon">sync</mat-icon>
+                  Last synced: {{ getLastSyncDate() }}
+                </p>
+              </div>
+            </div>
+  
+            <mat-expansion-panel [(expanded)]="panelExpanded">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>settings</mat-icon>
+                  Integration Options
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+  
+              <div class="options-content">
+                <button mat-raised-button color="accent" (click)="resyncIntegration()" [disabled]="syncing">
+                  <mat-icon>sync</mat-icon>
+                  <span *ngIf="!syncing">Re-sync Integration</span>
+                  <span *ngIf="syncing">Syncing...</span>
+                </button>
+  
+                <button mat-raised-button color="warn" (click)="removeIntegration()" [disabled]="loading">
+                  <mat-icon>delete</mat-icon>
+                  Remove Integration
+                </button>
+  
+                <button mat-raised-button color="primary" (click)="viewData()">
+                  <mat-icon>table_view</mat-icon>
+                  View Data
+                </button>
+              </div>
+            </mat-expansion-panel>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>

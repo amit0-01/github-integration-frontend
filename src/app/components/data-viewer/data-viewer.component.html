@@ -1,0 +1,63 @@
+<div class="data-viewer-container">
+    <mat-toolbar color="primary">
+      <button mat-icon-button routerLink="/integrations">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <span>GitHub Data Viewer</span>
+    </mat-toolbar>
+  
+    <div class="controls">
+      <mat-form-field appearance="outline" class="collection-select">
+        <mat-label>Active Integration</mat-label>
+        <mat-select [(value)]="selectedCollection" (selectionChange)="onCollectionChange()">
+          <mat-option value="" disabled>Select Collection</mat-option>
+          <mat-option *ngFor="let collection of collections" [value]="collection">
+            {{ collection }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+  
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search</mat-label>
+        <input matInput [(ngModel)]="searchTerm" (keyup.enter)="onSearch()" placeholder="Search across all fields...">
+        <button mat-icon-button matSuffix (click)="onSearch()" *ngIf="searchTerm">
+          <mat-icon>search</mat-icon>
+        </button>
+        <button mat-icon-button matSuffix (click)="clearSearch()" *ngIf="searchTerm">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </mat-form-field>
+  
+      <button mat-raised-button color="accent" (click)="exportToCsv()" [disabled]="!selectedCollection">
+        <mat-icon>download</mat-icon>
+        Export CSV
+      </button>
+    </div>
+  
+    <div class="grid-container">
+      <div *ngIf="loading" class="loading-overlay">
+        <mat-spinner></mat-spinner>
+      </div>
+  
+      <ag-grid-angular
+        *ngIf="selectedCollection"
+        class="ag-theme-material"
+        [columnDefs]="columnDefs"
+        [defaultColDef]="defaultColDef"
+        [rowModelType]="rowModelType"
+        [cacheBlockSize]="cacheBlockSize"
+        [maxBlocksInCache]="maxBlocksInCache"
+        [pagination]="true"
+        [paginationPageSize]="100"
+        [animateRows]="true"
+        [enableCellTextSelection]="true"
+        [suppressRowClickSelection]="true"
+        (gridReady)="onGridReady($event)"
+      ></ag-grid-angular>
+  
+      <div *ngIf="!selectedCollection && !loading" class="no-data">
+        <mat-icon>inbox</mat-icon>
+        <p>Select a collection to view data</p>
+      </div>
+    </div>
+  </div>
