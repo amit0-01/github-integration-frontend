@@ -7,8 +7,17 @@
     </mat-toolbar>
   
     <div class="controls">
+
       <mat-form-field appearance="outline" class="collection-select">
         <mat-label>Active Integration</mat-label>
+        <mat-select [(ngModel)]="selectedIntegration">
+          <mat-option value="github">Github</mat-option>
+        </mat-select>
+      </mat-form-field>
+    
+
+      <mat-form-field appearance="outline" class="collection-select">
+        <mat-label>Entity</mat-label>
         <mat-select [(value)]="selectedCollection" (selectionChange)="onCollectionChange()">
           <mat-option value="" disabled>Select Collection</mat-option>
           <mat-option *ngFor="let collection of collections" [value]="collection">

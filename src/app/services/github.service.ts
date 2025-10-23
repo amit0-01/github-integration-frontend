@@ -1,16 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { IntegrationStatus } from '../core/interfaces/github.interface';
 
-export interface IntegrationStatus {
-  connected: boolean;
-  connectedAt?: Date;
-  lastSyncedAt?: Date;
-  username?: string;
-  avatarUrl?: string;
-  email?: string;
-  name?: string;
-}
 
 @Injectable({
   providedIn: 'root'

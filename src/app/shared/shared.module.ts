@@ -15,7 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AgGridModule } from 'ag-grid-angular';
-
+import { RouterModule } from '@angular/router';
 
 
 @NgModule({
@@ -37,7 +37,8 @@ import { AgGridModule } from 'ag-grid-angular';
     MatSelectModule,
     MatFormFieldModule,
     MatInputModule,
-    AgGridModule
+    AgGridModule,
+    RouterModule
   ],
   exports : [
     // BrowserModule,
@@ -56,7 +57,8 @@ import { AgGridModule } from 'ag-grid-angular';
     MatSelectModule,
     MatFormFieldModule,
     MatInputModule,
-    AgGridModule
+    AgGridModule,
+    RouterModule
   ]
 })
 export class SharedModule { }

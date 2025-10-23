@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
-import { DataService, QueryRequest } from '../../services/data.service';
+import { DataService } from '../../services/data.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SharedModule } from '../../shared/shared.module';
+import { QueryRequest } from '../../core/interfaces/data.interface';
 
 @Component({
   selector: 'app-data-viewer',
@@ -18,6 +19,7 @@ export class DataViewerComponent implements OnInit {
   gridApi!: GridApi;
   columnDefs: ColDef[] = [];
   rowData: any[] = [];
+  selectedIntegration = 'github';
   
   defaultColDef: ColDef = {
     sortable: true,

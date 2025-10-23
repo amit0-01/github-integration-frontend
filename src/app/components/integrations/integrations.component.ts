@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IntegrationStatus, GithubService } from '../../services/github.service';
+import {  GithubService } from '../../services/github.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import { SharedModule } from '../../shared/shared.module';
+import { IntegrationStatus } from '../../core/interfaces/github.interface';
 
 @Component({
   selector: 'app-integrations',
