@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { DataService } from '../../services/data.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { SharedModule } from '../../shared/shared.module';
 import { QueryRequest } from '../../core/interfaces/data.interface';
+import { SharedModule } from '../../shared/shared.module';
 
 @Component({
   selector: 'app-data-viewer',
@@ -14,19 +14,19 @@ import { QueryRequest } from '../../core/interfaces/data.interface';
 export class DataViewerComponent implements OnInit {
   collections: string[] = [];
   selectedCollection: string = '';
+  selectedIntegration: string = 'github';  // Add this property
   searchTerm: string = '';
   
   gridApi!: GridApi;
   columnDefs: ColDef[] = [];
   rowData: any[] = [];
-  selectedIntegration = 'github';
   
   defaultColDef: ColDef = {
     sortable: true,
     filter: true,
     resizable: true,
-    floatingFilter: true,
-    minWidth: 100
+    minWidth: 100,
+    flex: 1
   };
   
   // Pagination settings
@@ -115,8 +115,7 @@ export class DataViewerComponent implements OnInit {
         headerName: this.formatHeaderName(fieldDef.field),
         filter: this.getFilterType(fieldDef.type),
         sortable: true,
-        resizable: true,
-        floatingFilter: true
+        resizable: true
       };
 
       // Special handling for different types
@@ -139,6 +138,12 @@ export class DataViewerComponent implements OnInit {
         colDef.valueFormatter = params => {
           return params.value ? 'Yes' : 'No';
         };
+        colDef.filter = 'agTextColumnFilter';
+        // Add filter params to allow filtering by Yes/No
+        colDef.filterParams = {
+          filterOptions: ['contains', 'notContains', 'equals'],
+          suppressAndOrCondition: true
+        };
       }
 
       return colDef;
@@ -159,7 +164,7 @@ export class DataViewerComponent implements OnInit {
       case 'date':
         return 'agDateColumnFilter';
       case 'boolean':
-        return 'agSetColumnFilter';
+        return 'agTextColumnFilter';  // Use text filter instead of agSetColumnFilter
       default:
         return 'agTextColumnFilter';
     }
