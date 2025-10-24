@@ -14,7 +14,7 @@ import { SharedModule } from '../../shared/shared.module';
 export class DataViewerComponent implements OnInit {
   collections: string[] = [];
   selectedCollection: string = '';
-  selectedIntegration: string = 'github';  // Add this property
+  selectedIntegration: string = 'github';  
   searchTerm: string = '';
   
   gridApi!: GridApi;
@@ -164,7 +164,7 @@ export class DataViewerComponent implements OnInit {
       case 'date':
         return 'agDateColumnFilter';
       case 'boolean':
-        return 'agTextColumnFilter';  // Use text filter instead of agSetColumnFilter
+        return 'agTextColumnFilter';  
       default:
         return 'agTextColumnFilter';
     }

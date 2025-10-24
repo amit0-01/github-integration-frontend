@@ -16,13 +16,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AgGridModule } from 'ag-grid-angular';
 import { RouterModule } from '@angular/router';
+import {MatChipsModule} from '@angular/material/chips';
+
 
 
 @NgModule({
   declarations: [],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
     CommonModule,
     HttpClientModule,
     FormsModule,
@@ -38,11 +38,10 @@ import { RouterModule } from '@angular/router';
     MatFormFieldModule,
     MatInputModule,
     AgGridModule,
-    RouterModule
+    RouterModule,
+    MatChipsModule
   ],
   exports : [
-    // BrowserModule,
-    // BrowserAnimationsModule,
     CommonModule,
     HttpClientModule,
     FormsModule,
@@ -58,7 +57,8 @@ import { RouterModule } from '@angular/router';
     MatFormFieldModule,
     MatInputModule,
     AgGridModule,
-    RouterModule
+    RouterModule,
+    MatChipsModule
   ]
 })
 export class SharedModule { }
