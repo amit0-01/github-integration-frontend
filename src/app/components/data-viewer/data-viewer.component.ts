@@ -2,20 +2,21 @@ import { Component, OnInit } from '@angular/core';
 import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
 import { DataService } from '../../services/data.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { QueryRequest } from '../../core/interfaces/data.interface';
+import { QueryRequest, GlobalSearchRequest } from '../../core/interfaces/data.interface';
 import { SharedModule } from '../../shared/shared.module';
 
 @Component({
   selector: 'app-data-viewer',
   templateUrl: './data-viewer.component.html',
   styleUrls: ['./data-viewer.component.scss'],
-  imports : [SharedModule]
+  imports: [SharedModule]
 })
 export class DataViewerComponent implements OnInit {
   collections: string[] = [];
   selectedCollection: string = '';
-  selectedIntegration: string = 'github';  
+  selectedIntegration: string = 'github';
   searchTerm: string = '';
+  searchMode: 'collection' | 'global' = 'collection';
   
   gridApi!: GridApi;
   columnDefs: ColDef[] = [];
@@ -37,6 +38,9 @@ export class DataViewerComponent implements OnInit {
   
   loading = false;
   
+  // Global search results
+  globalSearchResults: any[] = [];
+  
   // Expose Math to template
   Math = Math;
 
@@ -54,7 +58,7 @@ export class DataViewerComponent implements OnInit {
     this.dataService.getCollections().subscribe({
       next: (response) => {
         this.collections = response.collections;
-        if (this.collections.length > 0) {
+        if (this.collections.length > 0 && !this.selectedCollection) {
           this.selectedCollection = this.collections[0];
           this.loadCollection();
         }
@@ -72,7 +76,21 @@ export class DataViewerComponent implements OnInit {
     if (this.selectedCollection) {
       this.searchTerm = '';
       this.currentPage = 1;
+      this.searchMode = 'collection';
       this.loadCollection();
+    }
+  }
+
+  onSearchModeChange(): void {
+    this.searchTerm = '';
+    this.currentPage = 1;
+    if (this.searchMode === 'collection' && this.selectedCollection) {
+      this.loadCollection();
+    } else if (this.searchMode === 'global') {
+      this.rowData = [];
+      this.columnDefs = [];
+      this.totalCount = 0;
+      this.totalPages = 0;
     }
   }
 
@@ -108,6 +126,145 @@ export class DataViewerComponent implements OnInit {
     });
   }
 
+  performGlobalSearch(): void {
+    if (!this.searchTerm.trim()) {
+      this.snackBar.open('Please enter a search term', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.loading = true;
+    
+    const searchRequest: any = {
+      searchTerm: this.searchTerm,
+      page: this.currentPage,
+      pageSize: this.pageSize
+    };
+
+    this.dataService.globalSearch(searchRequest).subscribe({
+      next: (response:any) => {
+        console.log('Global search response:', response);
+        
+        // Flatten results from all collections
+        let allResults: any[] = [];
+        let totalRecords = 0;
+        
+        response.results.forEach((result:any) => {
+          // Handle both 'data' and 'samples' property names
+          const items = result.data || result.samples || [];
+          
+          items.forEach((item: any) => {
+            allResults.push({
+              _collection: result.collection,
+              ...item
+            });
+          });
+          
+          totalRecords += result.count || items.length;
+        });
+        
+        console.log('Flattened results:', allResults);
+        
+        this.rowData = allResults;
+        this.totalCount = totalRecords;
+        this.totalPages = Math.ceil(this.totalCount / this.pageSize);
+        
+        // Create dynamic columns based on results
+        if (allResults.length > 0) {
+          this.createGlobalSearchColumns(allResults);
+        } else {
+          this.columnDefs = [];
+        }
+        
+        this.loading = false;
+        
+        if (allResults.length > 0) {
+          this.snackBar.open(
+            `Found ${totalRecords} results across ${response.results.length} collections`,
+            'Close',
+            { duration: 3000 }
+          );
+        } else {
+          this.snackBar.open(
+            `No results found for "${this.searchTerm}"`,
+            'Close',
+            { duration: 3000 }
+          );
+        }
+      },
+      error: (error) => {
+        console.error('Error performing global search:', error);
+        this.snackBar.open('Failed to perform global search', 'Close', { duration: 3000 });
+        this.loading = false;
+      }
+    });
+  }
+
+  createGlobalSearchColumns(results: any[]): void {
+    // Get all unique keys from results
+    const allKeys = new Set<string>();
+    results.forEach(item => {
+      Object.keys(item).forEach(key => {
+        if (key !== '__v') {
+          allKeys.add(key);
+        }
+      });
+    });
+
+    // Create column with collection first
+    this.columnDefs = [
+      {
+        field: '_collection',
+        headerName: 'Collection',
+        pinned: 'left',
+        width: 150,
+        filter: 'agTextColumnFilter',
+        sortable: true,
+        resizable: true
+      }
+    ];
+
+    // Add other columns
+    Array.from(allKeys).forEach(key => {
+      if (key !== '_collection') {
+        const sampleValue = results.find(r => r[key] !== undefined)?.[key];
+        const type = this.inferType(sampleValue);
+        
+        this.columnDefs.push({
+          field: key,
+          headerName: this.formatHeaderName(key),
+          filter: this.getFilterType(type),
+          sortable: true,
+          resizable: true,
+          valueFormatter: this.getValueFormatter(type)
+        });
+      }
+    });
+  }
+
+  inferType(value: any): string {
+    if (value === null || value === undefined) return 'string';
+    if (typeof value === 'number') return 'number';
+    if (typeof value === 'boolean') return 'boolean';
+    if (value instanceof Date) return 'date';
+    if (Array.isArray(value)) return 'array';
+    if (typeof value === 'object') return 'object';
+    return 'string';
+  }
+
+  getValueFormatter(type: string): ((params: any) => string) | undefined {
+    switch (type) {
+      case 'date':
+        return (params) => params.value ? new Date(params.value).toLocaleString() : '';
+      case 'object':
+      case 'array':
+        return (params) => params.value ? JSON.stringify(params.value) : '';
+      case 'boolean':
+        return (params) => params.value ? 'Yes' : 'No';
+      default:
+        return undefined;
+    }
+  }
+
   createColumnDefs(fields: Array<{ field: string; type: string }>): void {
     this.columnDefs = fields.map(fieldDef => {
       const colDef: ColDef = {
@@ -139,7 +296,6 @@ export class DataViewerComponent implements OnInit {
           return params.value ? 'Yes' : 'No';
         };
         colDef.filter = 'agTextColumnFilter';
-        // Add filter params to allow filtering by Yes/No
         colDef.filterParams = {
           filterOptions: ['contains', 'notContains', 'equals'],
           suppressAndOrCondition: true
@@ -177,16 +333,29 @@ export class DataViewerComponent implements OnInit {
 
   onSearch(): void {
     this.currentPage = 1;
-    this.loadCollection();
+    
+    if (this.searchMode === 'global') {
+      this.performGlobalSearch();
+    } else {
+      this.loadCollection();
+    }
   }
 
   clearSearch(): void {
     this.searchTerm = '';
-    this.onSearch();
+    this.currentPage = 1;
+    if (this.searchMode === 'global') {
+      this.rowData = [];
+      this.columnDefs = [];
+      this.totalCount = 0;
+      this.totalPages = 0;
+    } else {
+      this.loadCollection();
+    }
   }
 
   onSortChanged(): void {
-    if (!this.gridApi) return;
+    if (!this.gridApi || this.searchMode === 'global') return;
     
     const sortModel = this.gridApi.getColumnState()
       .filter(col => col.sort != null)
@@ -216,7 +385,7 @@ export class DataViewerComponent implements OnInit {
   }
 
   onFilterChanged(): void {
-    if (!this.gridApi) return;
+    if (!this.gridApi || this.searchMode === 'global') return;
     
     const filterModel = this.gridApi.getFilterModel();
     const filters: { [key: string]: any } = {};
@@ -257,28 +426,44 @@ export class DataViewerComponent implements OnInit {
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
-      this.loadCollection();
+      if (this.searchMode === 'global') {
+        this.performGlobalSearch();
+      } else {
+        this.loadCollection();
+      }
     }
   }
 
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
-      this.loadCollection();
+      if (this.searchMode === 'global') {
+        this.performGlobalSearch();
+      } else {
+        this.loadCollection();
+      }
     }
   }
 
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
-      this.loadCollection();
+      if (this.searchMode === 'global') {
+        this.performGlobalSearch();
+      } else {
+        this.loadCollection();
+      }
     }
   }
 
   exportToCsv(): void {
     if (this.gridApi) {
+      const filename = this.searchMode === 'global' 
+        ? `global_search_${this.searchTerm}_export.csv`
+        : `${this.selectedCollection}_export.csv`;
+      
       this.gridApi.exportDataAsCsv({
-        fileName: `${this.selectedCollection}_export.csv`
+        fileName: filename
       });
     }
   }

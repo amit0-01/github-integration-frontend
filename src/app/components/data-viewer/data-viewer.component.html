@@ -7,19 +7,25 @@
     </mat-toolbar>
   
     <div class="controls">
-
       <mat-form-field appearance="outline" class="collection-select">
         <mat-label>Active Integration</mat-label>
         <mat-select [(ngModel)]="selectedIntegration">
           <mat-option value="github">Github</mat-option>
         </mat-select>
       </mat-form-field>
-    
 
       <mat-form-field appearance="outline" class="collection-select">
+        <mat-label>Search Mode</mat-label>
+        <mat-select [(ngModel)]="searchMode" (selectionChange)="onSearchModeChange()">
+          <mat-option value="collection">Single Collection</mat-option>
+          <mat-option value="global">Global Search</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="collection-select" *ngIf="searchMode === 'collection'">
         <mat-label>Entity</mat-label>
         <mat-select [(value)]="selectedCollection" (selectionChange)="onCollectionChange()">
-          <mat-option value="" >Select Collection</mat-option>
+          <mat-option value="">Select Collection</mat-option>
           <mat-option *ngFor="let collection of collections" [value]="collection">
             {{ collection }}
           </mat-option>
@@ -27,8 +33,12 @@
       </mat-form-field>
   
       <mat-form-field appearance="outline" class="search-field">
-        <mat-label>Search</mat-label>
-        <input matInput [(ngModel)]="searchTerm" (keyup.enter)="onSearch()" placeholder="Search across all fields...">
+        <mat-label>{{ searchMode === 'global' ? 'Search across all collections' : 'Search' }}</mat-label>
+        <input 
+          matInput 
+          [(ngModel)]="searchTerm" 
+          (keyup.enter)="onSearch()" 
+          [placeholder]="searchMode === 'global' ? 'Search across all collections...' : 'Search across all fields...'">
         <button mat-icon-button matSuffix (click)="onSearch()">
           <mat-icon>search</mat-icon>
         </button>
@@ -37,19 +47,32 @@
         </button>
       </mat-form-field>
   
-      <button mat-raised-button color="accent" (click)="exportToCsv()" [disabled]="!selectedCollection">
+      <button 
+        mat-raised-button 
+        color="accent" 
+        (click)="exportToCsv()" 
+        [disabled]="searchMode === 'collection' && !selectedCollection">
         <mat-icon>download</mat-icon>
         Export CSV
       </button>
     </div>
-  
+
+    <div class="search-info" *ngIf="searchMode === 'global' && rowData.length > 0">
+      <mat-chip-set>
+        <mat-chip color="primary" highlighted>
+          <mat-icon>info</mat-icon>
+          Global Search: Results from multiple collections
+        </mat-chip>
+      </mat-chip-set>
+    </div>
+
     <div class="grid-container">
       <div *ngIf="loading" class="loading-overlay">
         <mat-spinner></mat-spinner>
       </div>
   
       <ag-grid-angular
-        *ngIf="selectedCollection"
+        *ngIf="(searchMode === 'collection' && selectedCollection) || (searchMode === 'global' && rowData.length > 0)"
         class="ag-theme-material"
         [columnDefs]="columnDefs"
         [rowData]="rowData"
@@ -63,16 +86,29 @@
         (filterChanged)="onFilterChanged()"
       ></ag-grid-angular>
   
-      <div *ngIf="!selectedCollection && !loading" class="no-data">
+      <div *ngIf="searchMode === 'collection' && !selectedCollection && !loading" class="no-data">
         <mat-icon>inbox</mat-icon>
         <p>Select a collection to view data</p>
       </div>
+
+      <div *ngIf="searchMode === 'global' && !searchTerm && !loading" class="no-data">
+        <mat-icon>travel_explore</mat-icon>
+        <p>Enter a search term to search across all collections</p>
+      </div>
+
+      <div *ngIf="searchMode === 'global' && searchTerm && rowData.length === 0 && !loading" class="no-data">
+        <mat-icon>search_off</mat-icon>
+        <p>No results found for "{{ searchTerm }}"</p>
+      </div>
     </div>
-  
-    <!-- Custom Pagination -->
-    <div class="pagination" *ngIf="selectedCollection && totalCount > 0">
+
+    <div class="pagination" *ngIf="totalCount > 0">
       <div class="pagination-info">
         Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} records
+        <span *ngIf="searchMode === 'global'" class="global-badge">
+          <mat-icon>travel_explore</mat-icon>
+          Global
+        </span>
       </div>
       <div class="pagination-controls">
         <button mat-icon-button (click)="previousPage()" [disabled]="currentPage === 1">
