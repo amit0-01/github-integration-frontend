@@ -1,10 +1,13 @@
 import { Routes } from '@angular/router';
-import { DataViewerComponent } from './components/data-viewer/data-viewer.component';
-import { IntegrationsComponent } from './components/integrations/integrations.component';
+
 
 export const routes: Routes = [
     { path: '', redirectTo: '/integrations', pathMatch: 'full' },
-    { path: 'integrations', component: IntegrationsComponent },
-    { path: 'data-viewer', component: DataViewerComponent },
+    { path: 'integrations', 
+      loadChildren : () => import('./modules/integrations/integrations.module').then(m => m.IntegrationsModule)
+     },
+    { path: 'data-viewer',
+      loadChildren : () => import('./modules/data-viewer/data-viewer.module').then(m => m.DataViewerModule)
+     },
     { path: '**', redirectTo: '/integrations' }
   ];

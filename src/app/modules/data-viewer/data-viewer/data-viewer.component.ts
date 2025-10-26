@@ -1,15 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
-import { DataService } from '../../services/data.service';
+import { DataService } from '../../../services/data.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { QueryRequest, GlobalSearchRequest } from '../../core/interfaces/data.interface';
-import { SharedModule } from '../../shared/shared.module';
+import { QueryRequest, GlobalSearchRequest } from '../../../core/interfaces/data.interface';
 
 @Component({
   selector: 'app-data-viewer',
   templateUrl: './data-viewer.component.html',
   styleUrls: ['./data-viewer.component.scss'],
-  imports: [SharedModule]
+  standalone : false
 })
 export class DataViewerComponent implements OnInit {
   collections: string[] = [];
