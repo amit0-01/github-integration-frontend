@@ -133,7 +133,6 @@ export class IntegrationsComponent {
         });
         this.syncing = false;
         
-        // Refresh status after a delay
         setTimeout(() => {
           this.checkIntegrationStatus();
         }, 3000);

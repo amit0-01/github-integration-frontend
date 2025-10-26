@@ -29,7 +29,6 @@ export class DataViewerComponent implements OnInit {
     flex: 1
   };
   
-  // Pagination settings
   currentPage = 1;
   pageSize = 100;
   totalCount = 0;
@@ -37,10 +36,8 @@ export class DataViewerComponent implements OnInit {
   
   loading = false;
   
-  // Global search results
   globalSearchResults: any[] = [];
   
-  // Expose Math to template
   Math = Math;
 
   constructor(
@@ -110,7 +107,6 @@ export class DataViewerComponent implements OnInit {
         this.totalCount = response.totalCount;
         this.totalPages = response.totalPages;
         
-        // Create column definitions from fields
         if (response.fields && response.fields.length > 0) {
           this.createColumnDefs(response.fields);
         }
@@ -143,12 +139,10 @@ export class DataViewerComponent implements OnInit {
       next: (response:any) => {
         console.log('Global search response:', response);
         
-        // Flatten results from all collections
         let allResults: any[] = [];
         let totalRecords = 0;
         
         response.results.forEach((result:any) => {
-          // Handle both 'data' and 'samples' property names
           const items = result.data || result.samples || [];
           
           items.forEach((item: any) => {
@@ -167,7 +161,6 @@ export class DataViewerComponent implements OnInit {
         this.totalCount = totalRecords;
         this.totalPages = Math.ceil(this.totalCount / this.pageSize);
         
-        // Create dynamic columns based on results
         if (allResults.length > 0) {
           this.createGlobalSearchColumns(allResults);
         } else {
@@ -199,7 +192,6 @@ export class DataViewerComponent implements OnInit {
   }
 
   createGlobalSearchColumns(results: any[]): void {
-    // Get all unique keys from results
     const allKeys = new Set<string>();
     results.forEach(item => {
       Object.keys(item).forEach(key => {
@@ -209,7 +201,6 @@ export class DataViewerComponent implements OnInit {
       });
     });
 
-    // Create column with collection first
     this.columnDefs = [
       {
         field: '_collection',
@@ -222,7 +213,6 @@ export class DataViewerComponent implements OnInit {
       }
     ];
 
-    // Add other columns
     Array.from(allKeys).forEach(key => {
       if (key !== '_collection') {
         const sampleValue = results.find(r => r[key] !== undefined)?.[key];
@@ -274,7 +264,6 @@ export class DataViewerComponent implements OnInit {
         resizable: true
       };
 
-      // Special handling for different types
       if (fieldDef.type === 'date') {
         colDef.valueFormatter = params => {
           if (params.value) {
