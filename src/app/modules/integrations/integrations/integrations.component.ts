@@ -25,6 +25,11 @@ export class IntegrationsComponent {
 
   ngOnInit(): void {
     // Check for OAuth callback
+    this.handleOAuthCallback();
+    this.checkIntegrationStatus();
+  }
+
+  private handleOAuthCallback(): void {
     this.route.queryParams.subscribe(params => {
       if (params['success'] === 'true' && params['userId']) {
         this.githubService.setUserId(params['userId']);
@@ -45,8 +50,6 @@ export class IntegrationsComponent {
         });
       }
     });
-
-    this.checkIntegrationStatus();
   }
 
   checkIntegrationStatus(): void {
